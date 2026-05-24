@@ -22,7 +22,7 @@ jobs:
 
       - name: Descomprimir ZIP del proyecto
         run: |
-          ZIP_FILE="ImageZetaAnimatorRepo.zip"
+          ZIP_FILE="ImageZetaAnimatorRepo_CAMBIOS.zip"
 
           if [ ! -f "$ZIP_FILE" ]; then
             echo "No se encontró $ZIP_FILE"
@@ -35,11 +35,12 @@ jobs:
           mkdir extracted
           unzip -q "$ZIP_FILE" -d extracted
 
-          SETTINGS_FILE=$(find extracted -maxdepth 5 \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit)
+          SETTINGS_FILE=$(find extracted -maxdepth 6 \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit)
 
           if [ -z "$SETTINGS_FILE" ]; then
             echo "No se encontró settings.gradle dentro del ZIP"
-            find extracted -maxdepth 5 -type f
+            echo "Contenido encontrado:"
+            find extracted -maxdepth 6 -type f
             exit 1
           fi
 
@@ -60,8 +61,15 @@ jobs:
             gradle assembleDebug --no-daemon
           fi
 
+      - name: Buscar APK generado
+        run: |
+          echo "Buscando APK..."
+          find "$PROJECT_DIR" -type f -name "*.apk"
+
       - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
           name: ImageZeta-APK
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          path: |
+            ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+            ${{ env.PROJECT_DIR }}/**/build/outputs/apk/debug/*.apk
