@@ -1,0 +1,56 @@
+name: Generate APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Descomprimir ZIP del proyecto
+        run: |
+          ZIP_FILE="ImageZetaAnimatorRepo.zip"
+
+          if [ ! -f "$ZIP_FILE" ]; then
+            echo "No se encontró $ZIP_FILE"
+            echo "Archivos encontrados:"
+            ls -la
+            exit 1
+          fi
+
+          rm -rf extracted
+          mkdir extracted
+          unzip -q "$ZIP_FILE" -d extracted
+
+          PROJECT_DIR=$(find extracted -maxdepth 3 \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit | xargs dirname)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "No se encontró settings.gradle dentro del ZIP"
+            find extracted -maxdepth 4 -type f
+            exit 1
+          fi
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+          echo "Proyecto detectado en: $PROJECT_DIR"
+
+      - name: Compilar APK
+        run: |
+          cd "$PROJECT_DIR"
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImageZeta-APK
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
