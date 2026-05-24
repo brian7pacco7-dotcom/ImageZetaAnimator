@@ -17,12 +17,16 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Descomprimir ZIP del proyecto
         run: |
           ZIP_FILE="ImageZetaAnimatorRepo.zip"
 
           if [ ! -f "$ZIP_FILE" ]; then
             echo "No se encontró $ZIP_FILE"
+            echo "Archivos encontrados:"
             ls -la
             exit 1
           fi
@@ -31,22 +35,30 @@ jobs:
           mkdir extracted
           unzip -q "$ZIP_FILE" -d extracted
 
-          PROJECT_DIR=$(find extracted -maxdepth 4 \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit | xargs dirname)
+          SETTINGS_FILE=$(find extracted -maxdepth 5 \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit)
 
-          if [ -z "$PROJECT_DIR" ]; then
+          if [ -z "$SETTINGS_FILE" ]; then
             echo "No se encontró settings.gradle dentro del ZIP"
             find extracted -maxdepth 5 -type f
             exit 1
           fi
 
+          PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
           echo "Proyecto detectado en: $PROJECT_DIR"
+          ls -la "$PROJECT_DIR"
 
       - name: Compilar APK
         run: |
           cd "$PROJECT_DIR"
-          chmod +x ./gradlew
-          ./gradlew assembleDebug
+
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          else
+            gradle assembleDebug --no-daemon
+          fi
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
