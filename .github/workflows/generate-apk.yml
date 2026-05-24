@@ -23,7 +23,6 @@ jobs:
 
           if [ ! -f "$ZIP_FILE" ]; then
             echo "No se encontró $ZIP_FILE"
-            echo "Archivos encontrados:"
             ls -la
             exit 1
           fi
@@ -32,11 +31,11 @@ jobs:
           mkdir extracted
           unzip -q "$ZIP_FILE" -d extracted
 
-          PROJECT_DIR=$(find extracted -maxdepth 3 \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit | xargs dirname)
+          PROJECT_DIR=$(find extracted -maxdepth 4 \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit | xargs dirname)
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "No se encontró settings.gradle dentro del ZIP"
-            find extracted -maxdepth 4 -type f
+            find extracted -maxdepth 5 -type f
             exit 1
           fi
 
